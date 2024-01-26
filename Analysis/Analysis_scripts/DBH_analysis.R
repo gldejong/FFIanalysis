@@ -1,7 +1,9 @@
 ####DBH analysis
 
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
 
 library(tidyverse)
+library(ggforce)
 
 tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
 library(stringr)
@@ -116,4 +118,96 @@ ggplot(post_fire, aes(x=Year, y=DBH, group=TagNo,alpha=Status))+
 
 ggplot(tree, aes(x=Year, y=DBH, group=TagNo,alpha=Status, color=dbh_change))+geom_line()+
   geom_point(aes(size=0.05))+theme_classic()+scale_color_manual(values=c("darkblue", "lightblue", "lightgrey", "red"))
+
+
+##histograms of size composition over years
+
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
+tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
+tree$Year=str_split_i(tree$Date_format, "-", 1)
+
+tree=tree[which(tree$Status=="D"),]
+
+early_ss=tree[which(tree$Year %in% c("1990", "1991", "1992")), ]
+tree=tree[-which(tree$Year %in% c("1990", "1991", "1992")), ]
+early_ss$Year="1992"
+tree=rbind(early_ss,tree)
+
+
+
+#labeling by size class
+#pole is less than 15.1
+#medium is between 15.1 and 30
+#overstory is over 30
+
+for(x in 1:nrow(tree)){
+  if(is.na(tree[x, "DBH"])){
+    tree[x, "SizeClass"]="NA"
+  }else{
+    if(tree[x, "DBH"]<=15.1){
+      #pole tree
+      tree[x, "SizeClass"]="Pole (<15.1)"
+    }else if(15.1<tree[x, "DBH"] & tree[x, "DBH"]<30){
+      #medium tree
+      tree[x, "SizeClass"]="Medium (<30)"
+    }else{
+      #overstory tree
+      tree[x, "SizeClass"]="Overstory (30<)"
+    }
+    
+  }
+}
+
+tree=tree %>% drop_na(DBH)
+tree=tree %>% mutate(DBH=round(DBH, 0))
+
+ggplot(tree, aes(DBH, fill=SizeClass))+geom_histogram(bins=50)+facet_grid(~Year)+theme_classic()+ylim(0,51)
+
+ggsave("PSME_Finalized_Plots/Dead_tree_size_histogram.png", width=15, height=5)
+
+#same but for dead trees
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
+tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
+tree$Year=str_split_i(tree$Date_format, "-", 1)
+
+tree=tree[which(tree$Status=="D"),]
+
+early_ss=tree[which(tree$Year %in% c("1990", "1991", "1992")), ]
+tree=tree[-which(tree$Year %in% c("1990", "1991", "1992")), ]
+early_ss$Year="1992"
+tree=rbind(early_ss,tree)
+
+
+
+#labeling by size class
+#pole is less than 15.1
+#medium is between 15.1 and 30
+#overstory is over 30
+
+for(x in 1:nrow(tree)){
+  if(is.na(tree[x, "DBH"])){
+    tree[x, "SizeClass"]="NA"
+  }else{
+    if(tree[x, "DBH"]<=15.1){
+      #pole tree
+      tree[x, "SizeClass"]="Pole (<15.1)"
+    }else if(15.1<tree[x, "DBH"] & tree[x, "DBH"]<30){
+      #medium tree
+      tree[x, "SizeClass"]="Medium (<30)"
+    }else{
+      #overstory tree
+      tree[x, "SizeClass"]="Overstory (30<)"
+    }
+    
+  }
+}
+
+tree=tree %>% drop_na(DBH)
+tree=tree %>% mutate(DBH=round(DBH, 0))
+
+ggplot(tree, aes(DBH, fill=SizeClass))+geom_histogram(bins=50)+facet_grid(~Year)+theme_classic()
+
+ggsave("PSME_Finalized_Plots/Dead_tree_size_histogram.png", width=15, height=5)
+
+
 

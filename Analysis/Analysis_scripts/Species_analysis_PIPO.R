@@ -3,6 +3,7 @@
 library(tidyverse)
 library(dplyr)
 library(stringr)
+library(ggrepel)
 
 #clearing environment - fresh start!
 rm(list = ls())
@@ -11,7 +12,7 @@ rm(list = ls())
 #set working directory - CHANGE TO LOCAL SPECIFIC PATH
 setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
 #load in tree data - CHANGE TO LOCAL SPECIFIC PATH
-tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PIPO/PIPO_Trees - Individuals (metric)_XPT.csv")
 
 
 #filtering for only alive trees
@@ -53,6 +54,7 @@ species_summary <- species_summary %>%
 species_summary <- species_summary %>%
   mutate(percent = round(n/total*100, 1))
 
+unique(species_summary$Species.Symbol)
 
 #renaming species code to common name - CHANGE FOR LOCAL SPECIES
 species_summary=species_summary %>%
@@ -61,7 +63,12 @@ species_summary=species_summary %>%
                                  'QUGA1' = 'Gambels Oak',
                                  'PIPO1' = 'Ponderosa Pine',
                                  'PIST1' = 'Southwestern White Pine',
-                                 'PSME1' = 'Douglas Fir'))
+                                 'PSME1' = 'Douglas Fir',
+                                 'JUDE2' = 'Alligator Juniper',
+                                 'QUHY1' = 'Silverleaf Oak',
+                                 'PINU1' = 'Unidentifiable Pine',
+                                 'QUAR1' = 'Arizona Oak',
+                                 'QURU1' = 'Netleaf Oak'))
 
 
 
@@ -81,27 +88,27 @@ plot=ggplot(species_summary, aes(x="", y=percent, fill=Species.Symbol)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0)+
   facet_wrap(~Year)+
-  geom_text(aes(label = paste(percent, "%")), size=2,position = position_stack(vjust=0.5)) +
+  geom_text_repel(aes(label = paste(percent, "%")), size=2,position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+theme_bw()+scale_fill_brewer(palette = "PuOr")+
-  labs(title = "PSME plots species composition over time")+
+  labs(title = "PIPO plots species composition over time")+
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 plot
 
 my_tag <- unique(species_summary$total)
 tag_facet2(plot, 
-          x = -Inf, y = -Inf, 
-          vjust = -8.5, hjust = -3,
-          size = 2,
-          family = "serif",
-          tag_pool = my_tag)
+           x = -Inf, y = -Inf, 
+           vjust = -7.5, hjust = -1.75,
+           size = 2,
+           family = "serif",
+           tag_pool = my_tag)
 #saving plot - CHANGE TITLE 
-ggsave("PSME_Finalized_Plots/PSME_dead+live_species.png")
+ggsave("PIPO_Finalized_Plots/PIPO_live_species_composition.png")
 
 
 
 #pie chart to show species composition change over time - BY SIzE CLASS
 
-tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PIPO/PIPO_Trees - Individuals (metric)_XPT.csv")
 #filtering for only alive trees
 tree=tree[which(tree$Status=="L"),]
 #taking out canopy data
@@ -119,18 +126,18 @@ for(x in 1:nrow(tree)){
   if(is.na(tree[x, "DBH"])){
     tree[x, "SizeClass"]="NA"
   }else{
-  if(tree[x, "DBH"]<=15.1){
-    #pole tree
-    tree[x, "SizeClass"]="Pole (<15.1)"
-  }else if(15.1<tree[x, "DBH"] & tree[x, "DBH"]<30){
-    #medium tree
-    tree[x, "SizeClass"]="Medium (<30)"
-  }else{
-    #overstory tree
-    tree[x, "SizeClass"]="Overstory (30<)"
+    if(tree[x, "DBH"]<=15.1){
+      #pole tree
+      tree[x, "SizeClass"]="Pole (<15.1)"
+    }else if(15.1<tree[x, "DBH"] & tree[x, "DBH"]<30){
+      #medium tree
+      tree[x, "SizeClass"]="Medium (<30)"
+    }else{
+      #overstory tree
+      tree[x, "SizeClass"]="Overstory (30<)"
+    }
+    
   }
-  
-}
 }
 
 
@@ -199,9 +206,9 @@ plot=ggplot(species_summary_2, aes(x="", y=percent, fill=Species.Symbol)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0)+
   facet_grid(factor(SizeClass, levels=c("Overstory (30<)", "Medium (<30)", "Pole (<15.1)")) ~ Year)+
-  geom_text(aes(label = paste(percent, "%")), size=2,position = position_stack(vjust=0.5)) +
+  geom_text_repel(aes(label = paste(percent, "%")), size=1,position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+theme_bw()+scale_fill_brewer(palette = "PuOr")+
-  labs(title = "PSME plots species composition over time")+
+  labs(title = "PIPO plots species composition over time")+
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 plot
 
@@ -211,5 +218,5 @@ my_tag=c(my_tag, 65)
 
 
 #saving plot - CHANGE TITLE 
-ggsave("PSME_Finalized_Plots/PSME_species_by_size.png", width=15, height=8)
+ggsave("PIPO_Finalized_Plots/PIPO_species_by_size.png", width=15, height=8)
 

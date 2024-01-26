@@ -9,8 +9,8 @@ library(stringr)
 rm(list = ls())
 
 ##SEEDLINGS
-setwd("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/")
-seeds=read.csv("SAGU_data/PSME/PSME_Trees - Seedlings (Height Class) (metric)_XPT.csv")
+setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
+seeds=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Seedlings (Height Class) (metric)_XPT.csv")
 unique(seeds$MicroPlotSize)
 
 
@@ -82,7 +82,114 @@ theme_classic()+geom_area()+labs(title="Seedling Density(count/acre) over time",
   facet_wrap(~SizeClHt)+ theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
 
 
-ggsave("Analysis/PSME_Finalized_Plots/seedlingdensity.png", height=4, width=5)
+ggsave("PSME_Finalized_Plots/seedlingdensity.png", height=4, width=5)
+
+
+###BY SPECIES
+##SEEDLINGS
+setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
+seeds=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Seedlings (Height Class) (metric)_XPT.csv")
+unique(seeds$MicroPlotSize)
+
+
+seeds=seeds %>%
+  mutate(MicroPlotSize = case_match(MicroPlotSize, 
+                                    0.025~0.06177635, 
+                                    0.005~0.01235527))
+
+
+# Identify unique events and macroplots with missing MicroPlotSize values
+events = unique(seeds[which(!is.na(seeds$MicroPlotSize)), c("MacroPlot.Name", "Monitoring.Status")])
+samp=c()
+# Iterate through each unique event-macroplot combination
+for (i in 1:nrow(events)) {
+  # Find rows with the same event and macroplot as the current combination
+  samp = which(events[i,"MacroPlot.Name"]==seeds[,"MacroPlot.Name"] &
+                 events[i,"Monitoring.Status"] == seeds[, "Monitoring.Status"])
+  
+  # Replace missing MicroPlotSize values with values from non-missing rows within the same combination
+  seeds[samp[which(is.na(seeds[samp, "MicroPlotSize"]))], "MicroPlotSize"] = seeds[which(!is.na(seeds[samp, "MicroPlotSize"])), "MicroPlotSize"]
+}
+
+#count per acre - translate
+
+
+seeds=seeds[which(!is.na(seeds$Count)),]  
+
+
+#export from reports and analysis - compare and double check
+# 0 v null watch out
+#formatting date column
+seeds$Date_format=as.Date(seeds$Date, format="%m/%d/%Y")
+#creating new column for just year
+seeds$Year=str_split_i(seeds$Date_format, "-", 1)
+#combining 90s into one year
+seeds[which(seeds$Year %in% c("1990", "1991", "1992")),"Year"]="1990"
+#multiple by subplot fraction
+seeds$Count=seeds$Count*seeds$SubFrac
+seeds=seeds[-which(seeds$SizeClHt==0),]
+
+seedlings_summary=seeds %>% group_by(Year, SizeClHt, MacroPlot.Name, Species.Symbol) %>% summarize(Count=sum(Count), 
+                                                                                   MicroPlotSize=sum(MicroPlotSize))
+
+seedlings_summary$density=seedlings_summary$Count/seedlings_summary$MicroPlotSize
+seedlings_summary$SizeClHt=as.character(seedlings_summary$SizeClHt)
+
+all_classes=seedlings_summary %>%
+  group_by(Year, MacroPlot.Name, Species.Symbol) %>%
+  summarise(Count = sum(Count),
+            SizeClHt="Total",
+            MicroPlotSize=sum(MicroPlotSize),
+            density=Count/MicroPlotSize
+  )
+
+seedlings_summary=rbind(seedlings_summary, all_classes)
+
+#need to take avg of plot densities for each year
+seedlings_plotdata=seedlings_summary%>%
+  group_by(Year, SizeClHt, Species.Symbol) %>%
+  summarize(density_mean=mean(density))
+
+
+seedlings_plotdata=seedlings_plotdata %>%
+  mutate(Species.Symbol = recode(Species.Symbol, 
+                                 'ABCO1' = 'White Fir', 
+                                 'QUGA1' = 'Gambels Oak',
+                                 'PIPO1' = 'Ponderosa Pine',
+                                 'PIST1' = 'Southwestern White Pine',
+                                 'PSME1' = 'Douglas Fir',
+                                 'QUHY1' = 'Silverleaf Oak'))
+
+##EDITS
+#remove total
+#cut 1997 and 2001
+#add labels for years
+#make sure title isn't cut off
+seedlings_plotdata <- seedlings_plotdata[-which(seedlings_plotdata$SizeClHt=="Total"),]
+seedlings_plotdata <- seedlings_plotdata[-which(seedlings_plotdata$Year %in% c("1997", "2001")),]
+
+
+
+ggplot(seedlings_plotdata, aes(x=SizeClHt, y=density_mean,
+                               fill=as.factor(Species.Symbol)))+geom_bar(position='stack', stat='identity')+
+  facet_grid(rows=vars(Year))+
+
+  theme_classic()+labs(title="PSME Plots Seedling Density over time by species and size class",
+                                   fill="Species")+
+  scale_fill_brewer(palette = "PuOr")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))+
+  ylab("Mean Density (count/acre)")
+
+
+ggsave("PSME_Finalized_Plots/seedlingdensity_byspecies.png", height=4, width=8)
+
+
+
+
+
+
+
+
 
 library(emmeans)
 library(lmerTest)

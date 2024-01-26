@@ -7,7 +7,7 @@ duff=read.csv("SAGU_data/PSME/PSME_Surface Fuels - Duff_Litter_XPT.csv", na.stri
 fine=read.csv("SAGU_data/PSME/PSME_Surface Fuels - Fine_XPT.csv", na.strings=c("","NA"))
 saps=read.csv("SAGU_data/PSME/PSME_Trees - Saplings (Diameter Class) (metric)_XPT.csv", na.strings=c("","NA"))
 seeds=read.csv("SAGU_data/PSME/PSME_Trees - Seedlings (Height Class) (metric)_XPT.csv")
-tree=read.csv("SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
 
 seeds_1=seeds[which(seeds$MacroPlot.Name=="PSME-01" & seeds$Monitoring.Status=="00PR01"),]
 
