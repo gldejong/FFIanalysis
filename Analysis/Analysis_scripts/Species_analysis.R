@@ -23,79 +23,96 @@ tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
 #creating new column for just year
 tree$Year=str_split_i(tree$Date_format, "-", 1)
 #counting species for each year and creating new data frame for results
-species_summary=tree %>% group_by(Year) %>% count(Species.Symbol)
+species_summary=tree %>% group_by(Year, SubFrac) %>% count(Species.Symbol)
 
 #combining years 1990, 1991, 1992 - SAGUARO SPECIFIC (DELETE FOR OTHER PARKS)
 
 early_ss=species_summary[which(species_summary$Year %in% c("1990", "1991", "1992")), ]
 species=unique(early_ss$Species.Symbol)
-totals=c()
+totals_p=c()
+totals_o=c()
 for(s in 1:length(species)){
-  totals=c(totals, sum(early_ss[which(early_ss$Species.Symbol==species[s]),"n"]))
+  totals_p=c(totals_p, sum(early_ss[which(early_ss$Species.Symbol==species[s] & 
+                                            early_ss$SubFrac==0.25),"n"]))
+  totals_o=c(totals_o, sum(early_ss[which(early_ss$Species.Symbol==species[s] & 
+                                            early_ss$SubFrac==1.00),"n"]))
 }
 
-early_ss=cbind(c(rep("1992", length(species))), species, totals)
-colnames(early_ss)=c("Year", "Species.Symbol", "n")
+early_ss=cbind(c(rep("1992", length(species)*2)), c(rep(0.25, length(species)), 
+                                                       rep(1.00, length(species))), rep(species,2), c(totals_p, totals_o))
+colnames(early_ss)=c("Year","SubFrac", "Species.Symbol", "n")
 early_ss=as.data.frame(early_ss)
 species_summary=species_summary[-which(species_summary$Year %in% c("1990", "1991", "1992")), ]
 species_summary=rbind(early_ss, species_summary)
 species_summary$Year=as.character(species_summary$Year)
 
 
-#calculating total tree count for each year - to be used in percentage calculation
-species_summary$n=as.integer(species_summary$n)
+#density calculation
+species_summary$SubFrac=as.numeric(species_summary$SubFrac)
+species_summary=species_summary %>%
+  mutate(Acre = case_match(SubFrac,
+                                    0.25~0.06177635,
+                                    1~0.24710538,
+                           0.05~0.01235527))
+species_summary$n=as.numeric(species_summary$n)
+species_summary <- species_summary %>%
+  mutate(density = round(n/Acre, 1))
+
+
+#calculating total tree density for each year - to be used in percentage calculation
+species_summary$density=as.numeric(species_summary$density)
+#removing count and acre data
+species_summary=species_summary %>% select(-c(n, Acre))
+
+#adding pole and overstory density
+species_summary <- species_summary %>%
+  group_by(Year, Species.Symbol) %>%
+  mutate(density=sum(density))
+#removing (at this point redundant) pole density data
+species_summary=species_summary[-which(species_summary$SubFrac!=1),]
+#removing subfrac data
+species_summary=species_summary %>% select(-c(SubFrac))
+
+
 species_summary <- species_summary %>%
   group_by(Year) %>%
-  mutate(total = sum(n)) %>%
+  mutate(total = sum(density)) %>%
   ungroup()
 
+
+
+
 #calculating species percentage of total for each year
-species_summary <- species_summary %>%
-  mutate(percent = round(n/total*100, 1))
+species_summary <- species_summary %>% group_by(Species.Symbol) %>%
+  mutate(percent = round(density/total*100, 1))
 
 
 #renaming species code to common name - CHANGE FOR LOCAL SPECIES
 species_summary=species_summary %>%
   mutate(Species.Symbol = recode(Species.Symbol, 
                                  'ABCO1' = 'White Fir', 
-                                 'QUGA1' = 'Gambels Oak',
+                                 'QUGA1' = 'Gambel Oak',
                                  'PIPO1' = 'Ponderosa Pine',
                                  'PIST1' = 'Southwestern White Pine',
                                  'PSME1' = 'Douglas Fir'))
 
 
 
-
-library(egg)
-tag_facet2 <- function(p, open = "(", close = ")", tag_pool = letters, x = -Inf, y = Inf, 
-                       hjust = -0.5, vjust = 1.5, fontface = 2, family = "", ...) {
-  
-  gb <- ggplot_build(p)
-  lay <- gb$layout$layout
-  tags <- cbind(lay, label = paste0(open, tag_pool[lay$PANEL], close), x = x, y = y)
-  p + geom_text(data = tags, aes_string(x = "x", y = "y", label = "label"), ..., hjust = hjust, 
-                vjust = vjust, fontface = fontface, family = family, inherit.aes = FALSE)
-}
+library(ggrepel)
 #pie chart to show species composition change over time
 plot=ggplot(species_summary, aes(x="", y=percent, fill=Species.Symbol)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0)+
   facet_wrap(~Year)+
-  geom_text(aes(label = paste(percent, "%")), size=2,position = position_stack(vjust=0.5)) +
+  geom_text_repel(aes(label = paste(percent, "%")), size=2, 
+            position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+theme_bw()+scale_fill_brewer(palette = "PuOr")+
   labs(title = "PSME plots species composition over time")+
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 plot
 
-my_tag <- unique(species_summary$total)
-tag_facet2(plot, 
-          x = -Inf, y = -Inf, 
-          vjust = -8.5, hjust = -3,
-          size = 2,
-          family = "serif",
-          tag_pool = my_tag)
 #saving plot - CHANGE TITLE 
-ggsave("PSME_Finalized_Plots/PSME_dead+live_species.png")
+ggsave("PSME_Finalized_Plots/PSME_species_allsizes.png", width=7, height=5)
 
 
 
