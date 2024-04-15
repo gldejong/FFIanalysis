@@ -11,17 +11,16 @@ duff=read.csv("SAGU_data/PIPO/PIPO_Surface Fuels - Duff_Litter_XPT.csv", na.stri
 fine=read.csv("SAGU_data/PIPO/PIPO_Surface Fuels - Fine_XPT.csv", na.strings=c("","NA"))
 saps=read.csv("SAGU_data/PIPO/PIPO_Trees - Saplings (Diameter Class) (metric)_XPT.csv", na.strings=c("","NA"))
 seeds=read.csv("SAGU_data/PIPO/PIPO_Trees - Seedlings (Height Class) (metric)_XPT.csv")
-tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PIPO/PIPO_Trees - Individuals (metric)_XPT.csv")
+tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
 
 
 
 tree$Date=as.Date(tree$Date, "%m/%d/%Y %H:%M:%S")
 
-tree_1_=tree[which(tree$MacroPlot.Name=="PIPO-13"),]
+tree_1_=tree[which(tree$MacroPlot.Name=="PSME-10"),]
 tree_1_=tree_1_[which(tree_1_$Monitoring.Status=="01Post"),]
 
-tree_2=tree_1_[which(tree_1_$TagNo %in% c(804, 805, 809, 811, 812, 819, 821, 825, 826, 829, 
-                                          831, 832, 798, 1009, 1015, 1023, 1191, 1029, 1181, 9999, 803)),] 
+tree_2=tree_1_[which(tree_1_$TagNo %in% c(999)),] 
 
 tree_2=tree_2 %>% arrange(TagNo, Date)
 

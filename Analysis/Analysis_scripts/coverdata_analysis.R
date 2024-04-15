@@ -2,6 +2,7 @@ setwd("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/")
 
 library(tidyverse)
 library(ggrepel)
+library(ordinal)
 #clearing environment - fresh start!
 rm(list = ls())
 
@@ -99,7 +100,7 @@ ggplot(species_summary, aes(x="", y=percent, fill=Species.Symbol)) +
   labs(title = "PSME plots most common herbaceous species")+
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 
-
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/most_common_species.png", width=10, height=4)
   
 
 #canopy cover
@@ -111,15 +112,20 @@ canopy_summary=canopy %>% group_by(Year) %>% summarize(average=mean(Cover))
 
 canopy_summary %>% ggplot(aes(Year, average))+geom_col()+ylab("Average Canopy Cover")+theme_classic()
 
-
-canopy_graph_2=canopy %>% ggplot(aes(Year, Cover, fill=Year))+geom_boxplot()+geom_jitter()+theme_classic()+ylab("Canopy Cover")
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_cover_summary.png")
+canopy %>% ggplot(aes(Year, Cover, fill=Year))+geom_boxplot()+geom_jitter()+theme_classic()+ylab("Canopy Cover")
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_cover_jitter.png")
 #cutting out 2004 to compare
 
 canopy_2=canopy[-which(canopy$Year=='2004'),]
-canopy_graph=canopy_2 %>% ggplot(aes(Year, Cover, fill=Year))+geom_boxplot()+geom_jitter()+theme_classic()+ylab("Canopy Cover")
+canopy_2 %>% ggplot(aes(Year, Cover, fill=Year))+geom_boxplot()+geom_jitter()+theme_classic()+ylab("Canopy Cover")
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_cover_jitter_wo2004.png")
 
 
-canopy %>% ggplot(aes(Cover, fill=MacroPlot.Name))+geom_histogram()+facet_wrap(~Year)+theme_classic()+scale_fill_manual(values=as.vector(ocean.haline(10)))
+canopy %>% ggplot(aes(Cover, fill=MacroPlot.Name))+geom_histogram()+
+  facet_wrap(~Year)+theme_classic()+
+  scale_fill_manual(values=as.vector(ocean.haline(10)))
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_cover_byplot.png")
 
 
 anova(lm(Cover ~ factor(Year), data = canopy))
@@ -145,7 +151,8 @@ stackedbarplot=ggplot(species_summary, aes(fill=Veg_type, x=Year)) +
 
 library(egg)
 
-ggarrange(stackedbarplot, canopy_graph)
+canopy_species_comparison=ggarrange(stackedbarplot, canopy_graph)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_species_comparison.png", plot=canopy_species_comparison)
 
 #percentage calculation for anova
 #counting for each year for percentages
@@ -163,6 +170,7 @@ grassvforb <- grassvforb %>% group_by(Veg_type) %>%
 stackedbarplot_percent=ggplot(grassvforb, aes(fill=Veg_type, x=Year, y=percent)) + 
   geom_bar(position="stack", stat="identity")+theme_classic()
 stackedbarplot_percent
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/percent_grassvforb.png")
 
 
 ggarrange(stackedbarplot_percent, canopy_graph)
@@ -194,5 +202,34 @@ tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_da
 #livec_estimates=tree[-which(is.na(tree$LaddBaseHt)),]- this is only 2023 and 2013 pretty much
 
 
+#additional species and invasive species
+
+#rereading in cover data
+cover=read.csv("SAGU_data/PSME/PSME_Cover - Species Composition (metric)_XPT.csv", na.strings=c("","NA"))
+#formatting date column
+cover$Date=as.Date(cover$Date, format="%m/%d/%Y")
+#creating new column for just year
+cover$Year=str_split_i(cover$Date, "-", 1)
+
+#filtering for additional species
+#uv1 describes category
+additional_species=cover[which(cover$UV1=="Additional Species"),]
+additional_species=additional_species[-which(additional_species$Species.Symbol=="XXXX"),]
+additional_species=additional_species %>% group_by(Year, MacroPlot.Name) %>% count()
+
+ggplot(additional_species, aes(x=Year, y=n, fill=MacroPlot.Name))+
+  geom_histogram(stat="identity")+ylab("Number of Additional Species recorded")
+
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/additionalspecies.png", width=6, height=4)
 
 
+#filtering for invasive species
+#uv1 describes category
+invasive_species=cover[which(cover$UV1=="Invasive Species"),]
+invasive_species=invasive_species[-which(invasive_species$Species.Symbol=="XXXX"),]
+invasive_species=invasive_species %>% group_by(Year, MacroPlot.Name) %>% count()
+
+ggplot(invasive_species, aes(x=Year, y=n, fill=MacroPlot.Name))+
+  geom_histogram(stat="identity")+ylab("Number of invasive Species recorded")
+
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/invasivespecies.png", width=6, height=4)

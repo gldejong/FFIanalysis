@@ -11,6 +11,8 @@ cover=read.csv("SAGU_data/PSME/PSME_Cover - Species Composition (metric)_XPT.csv
 cover$Date=as.Date(cover$Date, format="%m/%d/%Y")
 #creating new column for just year
 cover$Year=str_split_i(cover$Date, "-", 1)
+#uv1 describes category
+canopy=cover[which(cover$UV1=="Canopy Cover Class"),]
 
 tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
 #formatting date column
@@ -21,39 +23,8 @@ tree$Year=str_split_i(tree$Date, "-", 1)
 #combining 1990, 1991, 1992
 tree[which(tree$Year=='1990' | tree$Year=='1991'), "Year"]='1992'
 
-
-#TREE BASAL AREA CALCULATION
-
-tree$basal_area=(tree$DBH^2)*0.005454
-tree$basal_area=as.numeric(tree$basal_area)
-tree_1=tree[-which(is.na(tree$basal_area)),]
-numberofplots=tree_1 %>% group_by(Year, MacroPlot.Name) %>% count(MacroPlot.Name)
-numberofplots$n=0.24710538 #acreage for one plot
-numberofplots$n=as.numeric(numberofplots$n)
-numberofplots=numberofplots %>% group_by(Year) %>% summarize(acres=sum(n))
-
-
-tree_1=tree_1[-which(tree_1$Status=="D"),]
-#tree_1=tree_1[which(tree_1$Year=="2008" | tree_1$Year=="2004" | tree_1$Year=="2013" | tree_1$Year=="2023"),]
-
-tree_basal=tree_1 %>% group_by(Year, Species.Symbol) %>% summarize(total_ba=sum(basal_area))
-
-tree_basal=tree_basal %>%
-  mutate(acres = recode(Year, 
-                    '1992' = as.numeric(numberofplots[which(numberofplots$Year=='1992'),"acres"]), 
-                    '1997' = as.numeric(numberofplots[which(numberofplots$Year=='1997'),"acres"]),
-                    '2001' = as.numeric(numberofplots[which(numberofplots$Year=='2001'),"acres"]),
-                    '2003' = as.numeric(numberofplots[which(numberofplots$Year=='2003'),"acres"]),
-                    '2004' = as.numeric(numberofplots[which(numberofplots$Year=='2004'),"acres"]),
-                    '2008' = as.numeric(numberofplots[which(numberofplots$Year=='2008'),"acres"]),
-                    '2013' = as.numeric(numberofplots[which(numberofplots$Year=='2013'),"acres"]),
-                    '2023' = as.numeric(numberofplots[which(numberofplots$Year=='2023'),"acres"]),))
-
-
-
-tree_basal$total_basal_area_per_acre=tree_basal$total_ba/tree_basal$acres
 #renaming species code to common name - CHANGE FOR LOCAL SPECIES
-tree_basal=tree_basal %>%
+tree=tree %>%
   mutate(Species.Symbol = recode(Species.Symbol, 
                                  'ABCO1' = 'White Fir', 
                                  'QUGA1' = 'Gambels Oak',
@@ -61,15 +32,54 @@ tree_basal=tree_basal %>%
                                  'PIST1' = 'Southwestern White Pine',
                                  'PSME1' = 'Douglas Fir'))
 
-plot=ggplot(tree_basal, aes(x=Year, y=total_basal_area_per_acre, fill=Species.Symbol))+
+#TREE BASAL AREA CALCULATION
+tree_1=tree[-which(tree$Status=="D"),] #only live trees
+#tree_1=tree_1[-which(tree_1$DBH<=15.1),] #remove poles
+tree_1$DBH=tree_1$DBH*0.39370079 #convert to inches
+tree_1$basal_area=(tree_1$DBH^2)*0.005454 #formula
+tree_1$basal_area=as.numeric(tree_1$basal_area)
+tree_1=tree_1[-which(is.na(tree_1$basal_area)),] #only tree w basal area
+
+#sum basal area by year and plot
+tree_basal=tree_1 %>% group_by(Year, MacroPlot.Name, SubFrac) %>% summarize(total_ba=sum(basal_area))
+#adding acres
+tree_basal=tree_basal %>%
+  mutate(acres = 0.24710538*SubFrac) %>% mutate(density=total_ba/acres)
+#sum density by plot and year
+tree_basal=tree_basal %>% group_by(Year, MacroPlot.Name) %>% summarize(totalba_peracre=sum(density))
+
+#averaging/plot by year
+tree_basal_summary=tree_basal %>% group_by(Year) %>% summarize(avg_plot_ba=mean(totalba_peracre))
+
+
+
+
+
+
+#plotting by species
+plot=ggplot(tree_basal, aes(x=Year, y=totalba_peracre, fill=Species.Symbol))+
   geom_bar(position="stack", stat="identity")+theme_classic()+ylab("Total Basal Area per Acre (ft^2/acre)")
 
 plot=plot +annotate("text", x="2003", y=50,size=3, label="Fire", color="red")
-plot=plot+ annotate("text", x="2008", y=700,size=2, label="*only 3 plots")+
- annotate("text", x="2008", y=660,size=2, label="dbh measured")
+plot=plot+ annotate("text", x="2008", y=200,size=2, label="*only 3 plots")+
+ annotate("text", x="2008", y=180,size=2, label="dbh measured")
 plot
 
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/tree_basal_area.png", width=7, height=3)
+
+
+
+
+ggplot(tree_basal, aes(x=totalba_peracre, fill=MacroPlot.Name))+geom_histogram()+facet_grid(rows=vars(Year))+theme_classic()
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalarea_byplot.png", width=7, height=4)
+
+library(ggridges)
+library(viridis)
+ggplot(tree_basal, aes(x=totalba_peracre, y=Year, fill=..x..))+geom_density_ridges_gradient()+
+  scale_colour_gradient(low = "#132B43",
+                        high = "#56B1F7")+theme_classic()+
+  scale_y_discrete(limits=rev)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalarea_distribution.png", width=7, height=4)
 
 #ggarrange(plot, canopy_graph_2)
 
@@ -93,21 +103,21 @@ generate_label_df <- function(TUKEY, variable){
 labels=generate_label_df(tukey, "as.factor(Year)")
 labels$Year=labels$treatment
 
-#tree_basal=tree_basal %>%
- # mutate(Letters = recode(Year, 
- #                         '1992' = labels[which(labels$Year=='1992'),"Letters"], 
- #                         '1997' = labels[which(labels$Year=='1997'),"Letters"],
- #                         '2001' = labels[which(labels$Year=='2001'),"Letters"],
- #                         '2003' = labels[which(labels$Year=='2003'),"Letters"],
- #                         '2004' = labels[which(labels$Year=='2004'),"Letters"],
- #                         '2008' = labels[which(labels$Year=='2008'),"Letters"],
-  #                        '2013' = labels[which(labels$Year=='2013'),"Letters"],
-   #                       '2023' = labels[which(labels$Year=='2023'),"Letters"]))
+
+#plotting basal area against canopy cover data
+#need average canopy cover per plot
+
+canopy=canopy %>% group_by(Year, MacroPlot.Name) %>% summarize(cover=mean(Cover))
+
+canopy_basal=inner_join(canopy, tree_basal, by = join_by(Year, MacroPlot.Name))
+
+ggplot(canopy_basal, aes(x=cover, y=totalba_peracre))+
+  geom_point()+geom_smooth(method="lm")+theme_classic()
+
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalarea_v_cover.png", width=5, height=4)
+
+model <- lm(totalba_peracre~cover, data=canopy_basal)
+summary(model)
 
 
-
-#plot+geom_bar(stat="identity")+aes(x=0, y=tree_basal$Letters, label=tree_basal$Letters)+
- # theme()+
-  #geom_text(position="stack")
-#trying to add tukey labels so close! update going to do it manually womp womp
 
