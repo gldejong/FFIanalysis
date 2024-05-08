@@ -1,5 +1,6 @@
 ####DBH analysis
 
+rm(list = ls())
 tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
 
 library(tidyverse)
@@ -12,20 +13,17 @@ tree$Year=str_split_i(tree$Date_format, "-", 1)
 
 
 
-p.list = lapply(sort(unique(tree$MacroPlot.Name)), function(i) {
-  ggplot(tree[tree$MacroPlot.Name==i,], aes(x=Year, y=DBH, group=TagNo, color=as.factor(TagNo)))+
-    geom_line(linetype=2)+geom_point(size=1.5)+
-    facet_wrap_paginate(~MacroPlot.Name)+
-    theme(legend.position="none")+
-    theme_classic()
+#p.list = lapply(sort(unique(tree$MacroPlot.Name)), function(i) {
+#  ggplot(tree[tree$MacroPlot.Name==i,], aes(x=Year, y=DBH, group=TagNo, color=as.factor(TagNo)))+
+#    geom_line(linetype=2)+geom_point(size=1.5)+
+ #   facet_wrap_paginate(~MacroPlot.Name)+
+ #   theme(legend.position="none")+
+  #  theme_classic()
   
-})
+#})
 
-p.list[[1]]
-p.list[[2]]
-p.list[[3]]
-p.list[[4]]
-p.list[[5]]
+#p.list[[1]]
+
 
 
 #color for increase, decrease, stay the same
@@ -35,22 +33,32 @@ library(dplyr)
 
 years=sort(unique(tree$Year))
 
+
 tree$dbh_change=NA
 
-tree[which(tree$Year==1990), "dbh_change"]="no_change"
+tree[which(tree$Year==1990), "dbh_change"]="dbh missing"
+tree=tree[-which(tree$Status=="X"),]
+tree=tree[-which(tree$TagNo==999),]
+tree=tree[which(is.na(tree$MacroPlotSize)),]
+tree=tree[-which(tree$SubFrac==1000),]
 
-
+#plot and tag!
 for(x in 2:length(years)){
   previous_year=years[x-1]
-  trees_p=tree[which(tree$Year==previous_year),"TagNo"]
   current_year=years[x]
-  trees_c=tree[which(tree$Year==current_year), "TagNo"]
+  plots=unique(tree[which(tree$Year==current_year), "MacroPlot.Name"])
+  
+  for(p in 1:length(plots)){
+    tree_plot=tree[which(tree$MacroPlot.Name==plots[p]),]
+  tree=tree[-which(tree$MacroPlot.Name==plots[p]),]
+  trees_p=tree_plot[which(tree_plot$Year==previous_year),"TagNo"]
+  trees_c=tree_plot[which(tree_plot$Year==current_year), "TagNo"]
   
   trees_c=intersect(trees_p, trees_c)
   
   for(i in 1:length(trees_c)){
-    current_dbh=tree[which(tree$TagNo==trees_c[i] & tree$Year==current_year), "DBH"]
-    previous_dbh=tree[which(tree$TagNo==trees_c[i] & tree$Year==previous_year), "DBH"]
+    current_dbh=tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==current_year), "DBH"]
+    previous_dbh=tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==previous_year), "DBH"]
     
     if(length(current_dbh)==0 | length(previous_dbh)==0){
       #do nothing?
@@ -63,61 +71,61 @@ for(x in 2:length(years)){
         previous_dbh=previous_dbh[1]}
       
       if(is.na(previous_dbh) | is.na(current_dbh)){
-        tree[which(tree$TagNo==trees_c[i] & tree$Year==current_year), "dbh_change"]="NA"
+        tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==current_year), "dbh_change"]="dbh missing"
       }else{
         
         if(previous_dbh<current_dbh){
           #increase
-          tree[which(tree$TagNo==trees_c[i] & tree$Year==current_year), "dbh_change"]="increase"
+          tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==current_year), "dbh_change"]="increase"
         }else if(previous_dbh>current_dbh){
           #decrease
-          tree[which(tree$TagNo==trees_c[i] & tree$Year==current_year), "dbh_change"]="decrease"
+          tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==current_year), "dbh_change"]="decrease"
         }else if(previous_dbh==current_dbh){
           #stay same
-          tree[which(tree$TagNo==trees_c[i] & tree$Year==current_year), "dbh_change"]="same"
+          tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==current_year), "dbh_change"]="same as previous year"
+          tree_plot[which(tree_plot$TagNo==trees_c[i] & tree_plot$Year==previous_year), "dbh_change"]="same as subsequent year"
         }
       }
     }
     
   } 
+  tree=rbind(tree, tree_plot)
+  }
 }
 
-tree[which(tree$dbh_change=="no_change" |is.na(tree$dbh_change)), "dbh_change"]="NA"
+#just look at 2008
+tree_2008=tree[which(tree$Year=="2008"),]
+#tag=tree[which(tree$TagNo==303),]
 
-ggplot(tree, aes(x=Year, y=DBH, group=TagNo, color=dbh_change, alpha=Status))+
-  geom_point(size=1.5)+theme_classic()+scale_color_manual(values=c("darkblue", "lightblue", "lightgrey", "red"))
+ggplot(tree_2008, aes(x=Status, y=DBH, color=dbh_change))+geom_point()+
+  facet_wrap(~MacroPlot.Name)+theme_classic()
+ggsave("PSME_Plots/2008dbh.png", width=8, height=4)
 
+#just dbh change values
+#tree=tree[which(tree$dbh_change=="same as previous year" | tree$dbh_change=="same as subsequent year" | is.na(tree$DBH)),]
+#tree=tree[-which(tree$Status=="D" & !is.na(tree$DBH)),]
+#tree=tree[-which(tree$CrwnCl=="BBD" | tree$CrwnCl=="DD"),]
 
-p.list = lapply(sort(unique(tree$MacroPlot.Name)), function(i) {
-  ggplot(tree[tree$MacroPlot.Name==i,], aes(x=Year, y=DBH, group=TagNo, color=dbh_change, alpha=Status))+
-    geom_point(size=1.5)+theme_classic()+
-    scale_color_manual(values=c("darkblue", "lightblue", "lightgrey", "red"))+
-    facet_wrap_paginate(~MacroPlot.Name)+
-    theme_classic()
-  
-})
+#tree[which(is.na(tree$dbh_change)),"dbh_change"]="dbh missing"
+#compare to missing dbh plot
 
-p.list[[1]]
-p.list[[2]]
-p.list[[3]]
-p.list[[4]]
-p.list[[5]]
-p.list[[6]]
-p.list[[7]]
-p.list[[8]]
-p.list[[9]]
-p.list[[10]]
+#tree=tree %>% arrange(TagNo, Date)
 
 
+ggplot(tree, aes(x=dbh_change, fill=MacroPlot.Name))+ 
+  geom_bar(width=1)+facet_wrap(~Year)+
+  theme(axis.text.x= element_text(angle = 90, vjust = 0.5, hjust=1), panel.background = element_rect(fill = 'white'))+
+  labs(y="Number of trees")
+ggsave("PSME_Plots/dbh_transfer.png", width=8, height=5)
 
-post_fire=tree[which(tree$Year=="2001" | tree$Year=="2003" | tree$Year=="2004"), ]
+#all in 2008
+tags_to_replace=tree_2008[which(tree_2008$dbh_change=="dbh missing"), c("TagNo", "MacroPlot.Name")]
+tree_2004=tree[which(tree$Year=="2004"),c("TagNo", "MacroPlot.Name", "DBH")]
 
-ggplot(post_fire, aes(x=Year, y=DBH, group=TagNo,alpha=Status))+
-  geom_point(aes(size=0.1, color=dbh_change))+theme_classic()+scale_color_manual(values=c("darkblue", "lightblue", "lightgrey", "red"))
 
+dbh_to_fill=left_join(tags_to_replace, tree_2004, by=c('MacroPlot.Name'='MacroPlot.Name', 'TagNo'='TagNo'))
+write.csv(dbh_to_fill, "dbh_to_fill.csv")
 
-ggplot(tree, aes(x=Year, y=DBH, group=TagNo,alpha=Status, color=dbh_change))+geom_line()+
-  geom_point(aes(size=0.05))+theme_classic()+scale_color_manual(values=c("darkblue", "lightblue", "lightgrey", "red"))
 
 
 ##histograms of size composition over years
