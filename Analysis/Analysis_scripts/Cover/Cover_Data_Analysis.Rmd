@@ -1,4 +1,23 @@
-#setting working directory - must change to location of data on users computer!
+---
+title: "Cover_Data_Analysis"
+output: html_document
+date: "2024-05-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## General Setup
+
+-   Set working directory - must change to location of data on users computer!
+-   Load packagesneeded for future code
+-   Clear the environment
+-   Read in cover data - must change to location of data on users computer!
+-   Format date column
+
+```{r setup}
+#setting working directory
 setwd("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/")
 #loading libraries
 library(tidyverse)
@@ -6,18 +25,31 @@ library(ggrepel)
 library(ordinal)
 library(pals)
 library(egg)
+
 #clearing environment - fresh start!
 rm(list = ls())
-#reading in cover data - must change to location of data on users computer!
+#reading in cover data
 cover=read.csv("SAGU_data/PSME/PSME_Cover - Species Composition (metric)_XPT.csv", na.strings=c("","NA"))
-
 
 #formatting date column
 cover$Date=as.Date(cover$Date, format="%m/%d/%Y")
 #creating new column for just year
 cover$Year=str_split_i(cover$Date, "-", 1)
+```
 
-### MOST COMMON HERBACEOUS SPECIES DATA
+## Most Common Herbaceous Species Data
+
+### Setup
+
+-   Filter for most common herbaceous species data
+-   Count species observations for each year
+-   Calculate percentages
+-   Rename species codes to common names
+-   must change for local species!
+-   Classify as grass or forb
+-   Calculating percentages of grasses and forbs
+
+```{r MOST COMMON HERBACEOUS SPECIES DATA}
 
 #uv1 describes category, filtering for most common herbaceous species
 common_species=cover[which(cover$UV1=="Most Common Herbaceous Species"),]
@@ -37,60 +69,73 @@ species_summary <- species_summary %>% group_by(Species.Symbol) %>%
   mutate(percent = round(n/total*100, 1))
 
 
-#renaming species code to common name - CHANGE FOR LOCAL SPECIES
+#renaming species code to common name 
 species_summary=species_summary %>%
-  mutate(Species.Symbol = recode(Species.Symbol, 
-                                 'ARLA1' = 'Sandwort', 
-                                 'BRCI1' = 'Fringed Brome',
-                                 'CAGE1' = 'White Mountain Sedge',
-                                 'CHEI1' = 'Lipfern',
-                                 'COCO1' = 'Coulters Horseweed',
-                                 'KOMA1' = 'Mountain Junegrass',
-                                 'OXAL1' = 'Wood Sorrel',
-                                 'PTAQ1' = 'Bracken Fern',
-                                 'SCPA1' = 'Figwort',
-                                 'COCA1' = 'Canadian Horseweed',
-                                 'COUM1' = 'Bastard Toadflax',
-                                 'GNAP1' = 'Cudweed',
-                                 'HODU1' = 'Mountain Spray',
-                                 'PIFI1' = 'Pinyon Rice Grass',
-                                 'AGHE1' = 'Fragrant Snakeroot',
-                                 'CHGR1' = 'Fetid Goosefoot',
-                                 'GALI1' = 'Common Bedstraw',
-                                 'GRAS1' = 'Unknown Grass',
-                                 'POFE1' = 'Fendler Bluegrass',
-                                 'SYOR1' = 'Mountain Snowberry',
-                                 'RONE1'= 'New Mexican Locust',
-                                 'FORB1'= 'Unknown Forb'))
+  mutate(Species.Symbol = case_match(Species.Symbol, 
+                                 'ARLA1' ~ 'Sandwort', 
+                                 'BRCI1' ~ 'Fringed Brome',
+                                 'CAGE1' ~ 'White Mountain Sedge',
+                                 'CHEI1' ~ 'Lipfern',
+                                 'COCO1' ~ 'Coulters Horseweed',
+                                 'KOMA1' ~ 'Mountain Junegrass',
+                                 'OXAL1' ~ 'Wood Sorrel',
+                                 'PTAQ1' ~ 'Bracken Fern',
+                                 'SCPA1' ~ 'Figwort',
+                                 'COCA1' ~ 'Canadian Horseweed',
+                                 'COUM1' ~ 'Bastard Toadflax',
+                                 'GNAP1' ~ 'Cudweed',
+                                 'HODU1' ~ 'Mountain Spray',
+                                 'PIFI1' ~ 'Pinyon Rice Grass',
+                                 'AGHE1' ~ 'Fragrant Snakeroot',
+                                 'CHGR1' ~ 'Fetid Goosefoot',
+                                 'GALI1' ~ 'Common Bedstraw',
+                                 'GRAS1' ~ 'Unknown Grass',
+                                 'POFE1' ~ 'Fendler Bluegrass',
+                                 'SYOR1' ~ 'Mountain Snowberry',
+                                 'RONE1' ~ 'New Mexican Locust',
+                                 'FORB1' ~ 'Unknown Forb'))
 
 
 #classifying as grass or forb
 species_summary=species_summary %>%
-  mutate(Veg_type = recode(Species.Symbol, 
-                                 'Sandwort' = 'Forb', 
-                                 'Fringed Brome' = 'Grass',
-                                 'White Mountain Sedge' = 'Grass',
-                                 'Lipfern' = 'Forb',
-                                 'Coulters Horseweed' = 'Forb',
-                                 'Mountain Junegrass' = 'Grass',
-                                 'Wood Sorrel' ='Forb',
-                                 'Bracken Fern' = 'Forb',
-                                 'Figwort'= 'Forb',
-                                 'Canadian Horseweed'= 'Forb',
-                                 'Bastard Toadflax'= 'Forb',
-                                 'Cudweed'= 'Forb',
-                                 'Mountain Spray'= 'Forb',
-                                 'Pinyon Rice Grass' = 'Grass',
-                                 'Fragrant Snakeroot'= 'Forb',
-                                 'Fetid Goosefoot'= 'Forb',
-                                 'Common Bedstraw'= 'Forb',
-                                 'Unknown Grass' = 'Grass',
-                                 'Fendler Bluegrass' = 'Grass',
-                                 'Mountain Snowberry'= 'Forb',
-                                 'New Mexican Locust'= 'Forb',
-                                 'Unknown Forb'= 'Forb'))
+  mutate(Veg_type = case_match(Species.Symbol, 
+                                 'Sandwort' ~ 'Forb', 
+                                 'Fringed Brome' ~ 'Grass',
+                                 'White Mountain Sedge' ~ 'Grass',
+                                 'Lipfern' ~ 'Forb',
+                                 'Coulters Horseweed' ~ 'Forb',
+                                 'Mountain Junegrass' ~ 'Grass',
+                                 'Wood Sorrel' ~'Forb',
+                                 'Bracken Fern' ~ 'Forb',
+                                 'Figwort'~ 'Forb',
+                                 'Canadian Horseweed'~ 'Forb',
+                                 'Bastard Toadflax'~ 'Forb',
+                                 'Cudweed'~ 'Forb',
+                                 'Mountain Spray'~ 'Forb',
+                                 'Pinyon Rice Grass' ~ 'Grass',
+                                 'Fragrant Snakeroot'~ 'Forb',
+                                 'Fetid Goosefoot'~ 'Forb',
+                                 'Common Bedstraw'~ 'Forb',
+                                 'Unknown Grass' ~ 'Grass',
+                                 'Fendler Bluegrass' ~ 'Grass',
+                                 'Mountain Snowberry'~ 'Forb',
+                                 'New Mexican Locust'~ 'Forb',
+                                 'Unknown Forb'~ 'Forb'))
+#counting for each year for percentages
+grassvforb=species_summary %>% group_by(Year) %>% count(Veg_type)
+grassvforb <- grassvforb %>%
+  group_by(Year) %>%
+  mutate(total = sum(n)) %>%
+  ungroup()
+#calculating percentage of total for each year
+grassvforb <- grassvforb %>% group_by(Veg_type) %>%
+  mutate(percent = round(n/total*100, 1))
 
+```
 
+### Plot
+
+```{r Most Common Herbaceous Species plot}
 
 #plotting most common herbaceous species for each year in a pie chart with a different color for each species
 
@@ -106,15 +151,31 @@ ggplot(species_summary, aes(x="", y=percent, fill=Species.Symbol)) +
 
 #saving plot in PSME plot folder - change to desired location on computer
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/most_common_species.png", width=10, height=4)
-  
 
-###CANOPY COVER DATA
+```
 
+## Canopy Cover Data
+
+### Setup
+
+-   Filter for most canopy cover class data
+-   Calculate average canopy cover for each year
+-   Run Anova to see difference between years
+
+```{r Canopy Cover Data}
 #uv1 describes category, filtering for Canopy Cover Class data
 canopy=cover[which(cover$UV1=="Canopy Cover Class"),]
 
 #calculating average canopy cover for each year and creating new data frame with results
 canopy_summary=canopy %>% group_by(Year) %>% summarize(average=mean(Cover))
+
+#running an anova to see if there is a significant difference between years for canopy cover
+anova(lm(Cover ~ factor(Year), data = canopy))
+```
+
+### Plots
+
+```{r Canopy Cover plots}
 
 #plotting average canopy cover in bar graph - doesn't show distribution well
 canopy_summary %>% ggplot(aes(Year, average))+geom_col()+ylab("Average Canopy Cover")+theme_classic()
@@ -135,15 +196,24 @@ canopy %>% ggplot(aes(Cover, fill=MacroPlot.Name))+geom_histogram()+
 
 #saving canopy cover by plot graph - change to desired location on computer
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_cover_byplot.png")
+```
 
+## Comparing Most Common Herbaceous Species Data with Canopy Cover Data
 
-#running an anova to see if there is a significant difference between years for canopy cover
-anova(lm(Cover ~ factor(Year), data = canopy))
+### Setup
 
-#COMPARING MOST COMMON HERBACEOUS SPECIES WITH CANOPY COVER DATA
+-   REQUIRED - run Most Common Herbaceous Species data setup and Canopy Cover data setup before running this chunk
+-   Filter out 2004 for canopy cover
 
+```{r Comparing Most Common Herbaceous Species Data with Canopy Cover Data}
 #cutting out 2004 to compare - no data exists in 2004 for most common herbaceous species in PSME plots
 canopy_2=canopy[-which(canopy$Year=='2004'),]
+
+```
+
+### Plot
+
+```{r Comparing Most Common Herbaceous Species Data with Canopy Cover Data plot}
 #plotting canopy boxplot plot and saving as canopy_graph
 canopy_graph=canopy_2 %>% ggplot(aes(Year, Cover, fill=Year))+geom_boxplot()+geom_jitter()+theme_classic()+ylab("Canopy Cover")
 
@@ -159,16 +229,6 @@ canopy_species_comparison=ggarrange(stackedbarplot, canopy_graph)
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/canopy_species_comparison.png", plot=canopy_species_comparison)
 
 
-#counting for each year for percentages
-grassvforb=species_summary %>% group_by(Year) %>% count(Veg_type)
-grassvforb <- grassvforb %>%
-  group_by(Year) %>%
-  mutate(total = sum(n)) %>%
-  ungroup()
-#calculating percentage of total for each year
-grassvforb <- grassvforb %>% group_by(Veg_type) %>%
-  mutate(percent = round(n/total*100, 1))
-
 # stacked bar plot of veg type forb vs grass percent by year
 stackedbarplot_percent=ggplot(grassvforb, aes(fill=Veg_type, x=Year, y=percent)) + 
   geom_bar(position="stack", stat="identity")+theme_classic()
@@ -179,10 +239,20 @@ ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/percent_
 
 #stacking stacked bar plot with percentages over canopy cover boxplot to compare trends
 ggarrange(stackedbarplot_percent, canopy_graph)
+#save if you want to I didn't lol
+```
 
+## Additional Species
 
-### ADDITIONAL SPECIES
+### Setup
 
+-   Read in cover data again for a fresh start after canopy cover analysis
+-   Format cover date column
+-   Filter for Additional Species data
+-   Remove XXXX species observations
+-   Count additional species observations by year and plot
+
+```{r Additional Species}
 #rereading in cover data
 cover=read.csv("SAGU_data/PSME/PSME_Cover - Species Composition (metric)_XPT.csv", na.strings=c("","NA"))
 #formatting date column
@@ -190,14 +260,17 @@ cover$Date=as.Date(cover$Date, format="%m/%d/%Y")
 #creating new column for just year
 cover$Year=str_split_i(cover$Date, "-", 1)
 
-
 #uv1 describes category, filtering for additional species
 additional_species=cover[which(cover$UV1=="Additional Species"),]
 #removing XXXX species
 additional_species=additional_species[-which(additional_species$Species.Symbol=="XXXX"),]
 #counting observations by year and plot
 additional_species=additional_species %>% group_by(Year, MacroPlot.Name) %>% count()
+```
 
+### Plot
+
+```{r Additional Species plot}
 #plotting number of additional species recorded each year and coloring by plot
 ggplot(additional_species, aes(x=Year, y=n, fill=MacroPlot.Name))+
   geom_histogram(stat="identity")+ylab("Number of Additional Species recorded")
@@ -205,17 +278,32 @@ ggplot(additional_species, aes(x=Year, y=n, fill=MacroPlot.Name))+
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/additionalspecies.png", width=6, height=4)
 
 
-###INVASIVE SPECIES
+```
 
+## Invasive Species
+
+### Setup
+
+-   Filter for Invasive Species data
+-   Remove XXXX species observations
+-   Count Invasive species observations by year and plot
+
+```{r Invasive Species}
 #uv1 describes category
 invasive_species=cover[which(cover$UV1=="Invasive Species"),]
 #removing XXXX species
 invasive_species=invasive_species[-which(invasive_species$Species.Symbol=="XXXX"),]
 #counting observations by year and plot
 invasive_species=invasive_species %>% group_by(Year, MacroPlot.Name) %>% count()
+```
 
+### Plot
+
+```{r Invasive Species plot}
 #plotting number of invasive species recorded each year and coloring by plot
 ggplot(invasive_species, aes(x=Year, y=n, fill=MacroPlot.Name))+
   geom_histogram(stat="identity")+ylab("Number of invasive Species recorded")
 #saving plot of invasive species recorded
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/invasivespecies.png", width=6, height=4)
+
+```

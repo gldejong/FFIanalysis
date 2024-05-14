@@ -125,9 +125,17 @@ for(x in 2:length(years)){
 }
 
 
+ggplot(tree, aes(x=dbh_change, fill=MacroPlot.Name))+ 
+  geom_bar(width=1)+facet_wrap(~Year)+
+  theme(axis.text.x= element_text(angle = 90, vjust = 0.5, hjust=1), panel.background = element_rect(fill = 'white'))+
+  labs(y="Number of trees")
+ggsave("PSME_Plots/dbh_transfer.png", width=8, height=5)
+
 #just look at 2008
 tree_2008=tree[which(tree$Year=="2008"),]
-
+ggplot(tree_2008, aes(x=Status, y=DBH, color=dbh_change))+geom_point()+
+  facet_wrap(~MacroPlot.Name)+theme_classic()
+ggsave("PSME_Plots/2008dbh.png", width=8, height=4)
 
 #all in 2008
 tags_to_replace=tree_2008[which(tree_2008$dbh_change=="dbh missing"), c("TagNo", "MacroPlot.Name")]
@@ -149,13 +157,13 @@ for(x in 1:nrow(tree_to_replace)){
 }
 
 tree_to_replace = tree_to_replace %>% 
-  mutate(Spp_GUID = recode(Species.Symbol, 
-                                 'ABCO1' = '346adde2-6563-4083-b88d-bfb95778f806', 
-                                 'QUGA1' = '92a767c9-f955-4bd4-a006-e59bbd909495',
-                                 'PIPO1' = 'b6275763-9179-42e0-a5a2-e1600ea2384a',
-                                 'PIST1' = '60d324f6-af0f-49be-a1e9-a64d205bf2a8',
-                                 'PSME1' = '1dcfc4d2-2c4d-462f-9b1f-7705d28e5bc5',
-                                 'CANOPY'='719fb3f3-30ff-4028-b955-c266cea53602'))
+  mutate(Spp_GUID = case_match(Species.Symbol, 
+                                 'ABCO1' ~ '346adde2-6563-4083-b88d-bfb95778f806', 
+                                 'QUGA1' ~ '92a767c9-f955-4bd4-a006-e59bbd909495',
+                                 'PIPO1' ~ 'b6275763-9179-42e0-a5a2-e1600ea2384a',
+                                 'PIST1' ~ '60d324f6-af0f-49be-a1e9-a64d205bf2a8',
+                                 'PSME1' ~ '1dcfc4d2-2c4d-462f-9b1f-7705d28e5bc5',
+                                 'CANOPY'~'719fb3f3-30ff-4028-b955-c266cea53602'))
 
 #order of columns needed
 #fix canopy

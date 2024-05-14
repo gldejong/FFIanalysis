@@ -1,33 +1,58 @@
-####DBH analysis
+---
+title: "DBH_Analysis"
+output: html_document
+date: "2024-05-09"
+---
 
-rm(list = ls())
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
+## General Setup
+
+-   Set working directory - must change to location of data on users computer!
+-   Load packages needed for future code
+-   Clear the environment
+-   Read in tree data - must change to location of data on users computer!
+-   Format date column
+-   Filter for live trees
+-   Combine 1990, 1991, and 1992 - specific to Saguaro!
+
+```{r}
+#set working directory
+setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
+#load packages
 library(tidyverse)
 library(ggforce)
 library(stringr)
 library(dplyr)
+#clear the environment - fresh start!
+rm(list = ls())
 
-#set working directory
-setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
-##histograms of size composition over years
-
+#read in tree data
 tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
+#format date column
 tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
 tree$Year=str_split_i(tree$Date_format, "-", 1)
-
+#filter for live trees
 tree=tree[which(tree$Status=="L"),]
 
+#combine 1990, 1991, and 1992
 early_ss=tree[which(tree$Year %in% c("1990", "1991", "1992")), ]
 tree=tree[-which(tree$Year %in% c("1990", "1991", "1992")), ]
 early_ss$Year="1992"
 tree=rbind(early_ss,tree)
 
 
+```
 
-#labeling by size class
-#pole is less than 15.1
-#medium is between 15.1 and 30
-#overstory is over 30
+#### Label trees by size class
+
+-   Pole is less than 15.1 dbh
+-   Medium is between 15.1 and 30 dbh
+-   Overstory is over 30 dbh
+
+```{r label trees}
 
 for(x in 1:nrow(tree)){
   if(is.na(tree[x, "DBH"])){
@@ -47,17 +72,38 @@ for(x in 1:nrow(tree)){
   }
 }
 
+```
+
+-   drop blank DBHs
+-   round DBHs to whole numbers
+-   calculate density in count per acre
+
+```{r}
 tree=tree %>% drop_na(DBH)
 tree=tree %>% mutate(DBH=round(DBH, 0))
 
 #density calculation
 tree_1=tree %>% mutate(density=1/(tree$SubFrac*0.24710538))
+```
 
+### Plotting dbh total density
+
+\*warning - this graph is slightly misleading because poles are recorded at a different scale than medium and overstory trees (in Saguaro at least). However, they are all converted to the same unit (stems/acre) so they can be plotted together accurately.
+
+```{r}
 ggplot(tree_1, aes(x=DBH, y=density, fill=SizeClass))+
   geom_histogram(stat="identity")+
   facet_grid(~Year)+theme_classic()+ylab("Total Density (stems/acre)")+xlab("DBH")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+#saving plot
+ggsave("PSME_Plots/dbh_total_density.png", height=4, width=6)
+```
 
+### Plot density by size class
+
+\*see above warning
+
+```{r}
 #group by size class - count then do density
 
 tree_2=tree %>% mutate(acres=0.24710538*tree$SubFrac) %>% group_by(Year, SizeClass, acres, MacroPlot.Name) %>% count() %>% mutate(density=n/acres)
@@ -70,7 +116,13 @@ ggplot(tree_2, aes(x=factor(SizeClass, level_order), y=average_density, fill=Siz
 
 ggsave("PSME_Finalized_Plots/Dead_tree_size_histogram.png", width=15, height=5)
 
+```
 
+### Plot density by MacroPlot
+
+\*see above warning
+
+```{r}
 
 #group by plot - count then do density
 
@@ -83,8 +135,14 @@ ggplot(tree_3, aes(x=factor(MacroPlot.Name), y=density, fill=SizeClass))+
 
 
 ggsave("PSME_Finalized_Plots/Dead_tree_size_histogram.png", width=15, height=5)
+```
 
-#boxplot of every year and size class combo
+### Additional Density Graphs
+
+-   density sum per year
+-   box plots separated by size class
+
+```{r}
 
 tree_4=tree %>% group_by(Year, SizeClass, MacroPlot.Name, SubFrac) %>% count() %>% 
   mutate(acres=0.24710538*SubFrac) %>% mutate(density=n/acres) %>%
@@ -98,4 +156,5 @@ tree_5=tree %>% group_by(Year, SizeClass, MacroPlot.Name, SubFrac) %>% count() %
 
 tree_5 %>% ggplot(aes(x=Year, y=density, fill=factor(SizeClass, level=level_order)))+geom_boxplot()
                 
-                
+  
+```

@@ -1,8 +1,37 @@
-setwd("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/")
+---
+title: "Tree_Basal_Area_Analysis"
+output: html_document
+date: "2024-05-09"
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## General Setup
+
+-   Set working directory - must change to location of data on users computer!
+-   Load packages needed for future code
+-   Clear the environment
+-   Read in cover data - must change to location of data on users computer! - specific to Saguaro\*
+-   Filter for canopy cover data - specific to Saguaro\*
+-   Format date column
+-   Read in tree data - must change to location of data on users computer!
+-   Format date column
+-   Combining years 1990, 1991, 1992 - specific to Saguaro
+-   Renaming species code to common name for tree species - must change for local species!
+
+\*Note for the cover data - this is a Saguaro specific protocol and won't apply to data from other parks. It is included in this script because we compared our canopy cover data to tree basal area. The protocol has since been discontinued. Skip these sections if you are not from Saguaro
+
+```{r setup}
+#set working directory  
+setwd("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/")
+#load packages
 library(tidyverse)
 library(ggrepel)
 library(multcompView)
+library(ggridges)
+library(viridis)
 #clearing environment - fresh start!
 rm(list = ls())
 
@@ -34,13 +63,36 @@ tree=tree %>%
                                  'PIST1' ~ 'Southwestern White Pine',
                                  'PSME1' ~ 'Douglas Fir'))
 
+
+```
+
+## Basal Area Calculation
+
+### Setup
+
+-   only live trees
+-   option to remove poles - un-comment the second line
+
+```{r basal area}
+
 #TREE BASAL AREA CALCULATION
 tree_1=tree[-which(tree$Status=="D"),] #only live trees
-#tree_1=tree_1[-which(tree_1$DBH<=15.1),] #remove poles
+#tree_1=tree_1[-which(tree_1$DBH<=15.1),] #remove poles - uncomment to implement!
+
 tree_1$DBH=tree_1$DBH*0.39370079 #convert to inches
 tree_1$basal_area=(tree_1$DBH^2)*0.005454 #formula
 tree_1$basal_area=as.numeric(tree_1$basal_area)
 tree_1=tree_1[-which(is.na(tree_1$basal_area)),] #only tree w basal area
+
+
+
+```
+
+## Plotting Basal Area
+
+### Plot Basal Area by Species
+
+```{r plot}
 
 #sum basal area by year and plot
 tree_basal=tree_1 %>% group_by(Year, MacroPlot.Name, SubFrac, Species.Symbol) %>% summarize(total_ba=sum(basal_area))
@@ -53,17 +105,22 @@ tree_basal=tree_basal %>% group_by(Year, MacroPlot.Name, Species.Symbol) %>% sum
 #averaging/plot by year
 tree_basal_summary=tree_basal %>% group_by(Year, Species.Symbol) %>% summarize(avg_plot_ba=mean(totalba_peracre))
 
-
-
 #plotting by species
 plot=ggplot(tree_basal, aes(x=Year, y=totalba_peracre, fill=Species.Symbol))+
   geom_bar(position="stack", stat="identity")+theme_classic()+ylab("Total Basal Area per Acre (ft^2/acre)")
 
+#Change for year of fire!!
 plot=plot +annotate("text", x="2003", y=50,size=3, label="Fire", color="red")
 plot
 
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/tree_basal_area.png", width=7, height=3)
 
+
+```
+
+### Plot Basal Area by plot
+
+```{r plot}
 #sum basal area by year and plot
 tree_basal=tree_1 %>% group_by(Year, MacroPlot.Name, SubFrac) %>% summarize(total_ba=sum(basal_area))
 #adding acres
@@ -75,21 +132,16 @@ tree_basal=tree_basal %>% group_by(Year, MacroPlot.Name) %>% summarize(totalba_p
 #averaging/plot by year
 tree_basal_summary=tree_basal %>% group_by(Year) %>% summarize(avg_plot_ba=mean(totalba_peracre))
 
-
-
-
+#plot
 ggplot(tree_basal, aes(x=totalba_peracre, fill=MacroPlot.Name))+geom_histogram()+facet_grid(rows=vars(Year))+theme_classic()
+
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalarea_byplot.png", width=7, height=4)
 
-library(ggridges)
-library(viridis)
-ggplot(tree_basal, aes(x=totalba_peracre, y=Year, fill=after_stat(x)))+geom_density_ridges_gradient()+
-  scale_colour_gradient(low = "#132B43",
-                        high = "#56B1F7")+theme_classic()+
-  scale_y_discrete(limits=rev)
-ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalarea_distribution.png", width=7, height=4)
+```
 
+Create labels for years that are significantly different from each other
 
+```{r}
 
 basal_a_model=aov(totalba_peracre ~ as.factor(Year), data=tree_basal)
 anova(basal_a_model)
@@ -109,9 +161,29 @@ generate_label_df <- function(TUKEY, variable){
   return(Tukey.labels)
 }
 
+#run function
 labels=generate_label_df(tukey, "as.factor(Year)")
+#print labels
+print(labels)
+
+```
+
+### Density ridge graph
+
+```{r plot}
+ggplot(tree_basal, aes(x=totalba_peracre, y=Year, fill=after_stat(x)))+geom_density_ridges_gradient()+
+  scale_colour_gradient(low = "#132B43",
+                        high = "#56B1F7")+theme_classic()+
+  scale_y_discrete(limits=rev)
+
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalarea_distribution.png", width=7, height=4)
 
 
+```
+
+### Plotting basal area against canopy cover data
+
+```{r}
 
 #plotting basal area against canopy cover data
 #need average canopy cover per plot
@@ -127,6 +199,4 @@ ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/basalare
 
 model <- lm(totalba_peracre~cover, data=canopy_basal)
 summary(model)
-
-
-
+```

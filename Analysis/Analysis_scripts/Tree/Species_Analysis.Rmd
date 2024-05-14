@@ -1,33 +1,54 @@
-####Species composition analysis
+---
+title: "Species_Analysis"
+output: html_document
+date: "2024-05-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## General Setup
+
+-   Set working directory - must change to location of data on users computer!
+-   Load packages needed for future code
+-   Clear the environment
+-   Read in seedling data - must change to location of data on users computer!
+-   Format date column
+-   Filtering for only live trees
+-   Taking out canopy data
+
+```{r}
+#set working directory - CHANGE TO LOCAL SPECIFIC PATH
+setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
+
 #load necessary packages
 library(tidyverse)
 library(dplyr)
-library(stringr)
 library(ggrepel)
+library(stringr)
 
 #clearing environment - fresh start!
 rm(list = ls())
 
 
-#set working directory - CHANGE TO LOCAL SPECIFIC PATH
-setwd("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/")
 #load in tree data - CHANGE TO LOCAL SPECIFIC PATH
 tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
 
+#formatting date column
+tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
+#creating new column for just year
+tree$Year=str_split_i(tree$Date_format, "-", 1)
 
 #filtering for only alive trees
 tree=tree[which(tree$Status=="L"),]
 #taking out canopy data
 tree=tree[-which(tree$Species.Symbol=="CANOPY"),]
-#formatting date column
-tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
-#creating new column for just year
-tree$Year=str_split_i(tree$Date_format, "-", 1)
-#counting species for each year and creating new data frame for results
-species_summary=tree %>% group_by(Year, SubFrac) %>% count(Species.Symbol)
+```
 
-#combining years 1990, 1991, 1992 - SAGUARO SPECIFIC (DELETE FOR OTHER PARKS)
+Combining years 1990, 1991, 1992 - SAGUARO SPECIFIC
 
+```{r}
 early_ss=species_summary[which(species_summary$Year %in% c("1990", "1991", "1992")), ]
 species=unique(early_ss$Species.Symbol)
 
@@ -47,8 +68,11 @@ early_ss=as.data.frame(early_ss)
 species_summary=species_summary[-which(species_summary$Year %in% c("1990", "1991", "1992")), ]
 species_summary=rbind(early_ss, species_summary)
 species_summary$Year=as.character(species_summary$Year)
+```
 
+### Density Calculation
 
+```{r}
 #density calculation
 species_summary$SubFrac=as.numeric(species_summary$SubFrac)
 species_summary=species_summary %>%
@@ -80,9 +104,11 @@ species_summary <- species_summary %>%
   group_by(Year) %>%
   mutate(total = sum(density)) %>%
   ungroup()
+```
 
+Calculating species percentage of total for each year
 
-
+```{r}
 
 #calculating species percentage of total for each year
 species_summary <- species_summary %>% group_by(Species.Symbol) %>%
@@ -97,10 +123,13 @@ species_summary=species_summary %>%
                                  'PIPO1' ~ 'Ponderosa Pine',
                                  'PIST1' ~ 'Southwestern White Pine',
                                  'PSME1' ~ 'Douglas Fir'))
+```
 
+## Plotting
 
+### Species Composition Pie Chart
 
-
+```{r}
 #pie chart to show species composition change over time
 plot=ggplot(species_summary, aes(x="", y=percent, fill=Species.Symbol)) +
   geom_bar(stat="identity", width=1) +
@@ -115,24 +144,13 @@ plot
 
 #saving plot - CHANGE TITLE 
 ggsave("PSME_Finalized_Plots/PSME_species_allsizes.png", width=7, height=5)
+```
 
+### Species Composition Pie Chart by Size Class
 
+#### Setup
 
-#pie chart to show species composition change over time - BY SIzE CLASS
-
-tree=read.csv("C:/Users/edeegan/OneDrive - DOI/Fire_project/Fire_project/SAGU_data/PSME/PSME_Trees - Individuals (metric)_XPT.csv")
-#filtering for only alive trees
-tree=tree[which(tree$Status=="L"),]
-#taking out canopy data
-tree=tree[-which(tree$Species.Symbol=="CANOPY"),]
-#formatting date column
-tree$Date_format=as.Date(tree$Date, format="%m/%d/%Y")
-#creating new column for just year
-tree$Year=str_split_i(tree$Date_format, "-", 1)
-#labeling by size class
-#pole is less than 15.1
-#medium is between 15.1 and 30
-#overstory is over 30
+```{r}
 
 for(x in 1:nrow(tree)){
   if(is.na(tree[x, "DBH"])){
@@ -151,7 +169,6 @@ for(x in 1:nrow(tree)){
   
 }
 }
-
 
 #counting species for each year and creating new data frame for results
 species_summary_2=tree %>% group_by(Year, SizeClass) %>% count(Species.Symbol)
@@ -201,9 +218,6 @@ species_summary_2=species_summary_2 %>%
                                  'PIST1' = 'Southwestern White Pine',
                                  'PSME1' = 'Douglas Fir'))
 
-
-
-
 #remove nas
 
 species_summary_2=species_summary_2[-which(species_summary_2$SizeClass=="NA"),]
@@ -212,8 +226,13 @@ species_summary_2=species_summary_2[-which(species_summary_2$SizeClass=="NA"),]
 species_summary_2=species_summary_2 %>%
   arrange(match(SizeClass,c("Overstory (30<)", "Medium (<30)", "Pole (<15.1)")), Year)
 
-#plot by size class
+```
 
+#### Plot
+
+\*recommended to add tags (total trees recorded) in powerpoint or image edited software after
+
+```{r}
 plot=ggplot(species_summary_2, aes(x="", y=percent, fill=Species.Symbol)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0)+
@@ -228,7 +247,7 @@ plot
 my_tag <- unique(species_summary_2$total)
 my_tag=c(my_tag, 65)
 
-
+print(my_tag)
 #saving plot - CHANGE TITLE 
 ggsave("PSME_Finalized_Plots/PSME_species_by_size.png", width=15, height=8)
-
+```
