@@ -232,3 +232,22 @@ my_tag=c(my_tag, 65)
 #saving plot - CHANGE TITLE 
 ggsave("PSME_Finalized_Plots/PSME_species_by_size.png", width=15, height=8)
 
+plots_num=tree %>% group_by(Year) %>% summarize(count=n_distinct(MacroPlot.Name))
+plots_num[3,2]=9
+
+species_summary_2=merge(plots_num, species_summary_2, by="Year")
+
+
+species_summary_2=species_summary_2 %>%
+  mutate(Acre = round(count*0.24710538, 1))
+
+species_summary_2[which(species_summary_2$SizeClass=="Pole (<15.1)"), "Acre"]=species_summary_2[which(species_summary_2$SizeClass=="Pole (<15.1)"), "Acre"]*0.25
+
+species_summary_2$count_per_acre=species_summary_2$n/species_summary_2$Acre
+
+
+species_summary_2=species_summary_2 %>% group_by(Year, SizeClass) %>% summarize(sum=sum(count_per_acre))
+
+print(round(species_summary_2$sum,1))
+
+

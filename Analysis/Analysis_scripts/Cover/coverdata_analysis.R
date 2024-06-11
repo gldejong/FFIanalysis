@@ -219,3 +219,4 @@ ggplot(invasive_species, aes(x=Year, y=n, fill=MacroPlot.Name))+
   geom_histogram(stat="identity")+ylab("Number of invasive Species recorded")
 #saving plot of invasive species recorded
 ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/invasivespecies.png", width=6, height=4)
+

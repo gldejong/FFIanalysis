@@ -92,6 +92,11 @@ pivot_longer(cols=c(OneHr, TenHr, HunHr, '1000hr'), names_to="Size_class", value
 #0.0228 huns
 #0.0510 thou
 
+
+#calculating percent increase for thousand hour fuels
+fuels_prevpost %>% group_by(year, Size_class) %>% summarize(mean=mean(Fuel_Loading))
+((23.9-14.2)/14.2)*100
+
 ggplot() +
   theme_bw() +
   geom_boxplot(aes(y=Fuel_Loading, x=year, color=Size_class),

@@ -29,7 +29,7 @@ ggplot(poles, aes(x=Year, y=density))+geom_boxplot()+
   stat_summary(aes(label=round(..y.., 1)),vjust=1.8, fun.y=mean, geom="text", size=3)+ 
   annotate ("rect", xmin="2000", xmax="2003", ymin=30, ymax=31, alpha=0.2, color="red", fill="red")+ 
   annotate ("rect", xmin="2003", xmax="2024", ymin=30, ymax=31, alpha=0.2, color="blue", fill="blue")+ 
-  annotate ("rect", xmin="2000", xmax="2024", ymin=8.9, ymax=14.24, alpha=0.2, color="green", fill="green")
+  annotate ("rect", xmin="2000", xmax="2024", ymin=8.9, ymax=12.46, alpha=0.2, color="green", fill="green")
 
 ggsave("PSME_Plots/pole_tree_density.png", width=8, height=6)
 poles_mean=poles %>% group_by(Year) %>% summarise(mean_pole_density=mean(density))
@@ -47,13 +47,13 @@ tree$Date=as.Date(tree$Date, format="%m/%d/%Y")
 #creating new column for just year
 tree$Year=str_split_i(tree$Date, "-", 1)
 #deleting years before 2003
-tree=tree[-which(tree$Year %in% c("1990", "1991", "1992", "1997", "2008")),]
+tree=tree[-which(tree$Year %in% c("1990", "1991", "1992", "1997")),]
 
 #overstory trees
 overstory=tree[which(tree$DBH>15.1),]
 
 overstory=overstory %>% group_by(Year, Status) %>% count()
-overstory[which(overstory$Status=="D"), "n"]=(c(110, 252, 268, 230, 131)*-1)
+overstory[which(overstory$Status=="D"), "n"]=(c(109, 249, 269,295, 231, 131)*-1)
 
 ggplot(overstory)+
   geom_segment(aes(x=Year, xend=Year, y=1, yend=n, color=Status))+ theme_light()+

@@ -50,19 +50,25 @@ tree_basal=tree_basal %>%
 #sum density by plot and year
 tree_basal=tree_basal %>% group_by(Year, MacroPlot.Name, Species.Symbol) %>% summarize(totalba_peracre=sum(density))
 
+##OPTIONAL FILTER FOR STAND REPLACING PLOTS
+tree_basal_2=tree_basal %>% filter(MacroPlot.Name=="PSME-03" | MacroPlot.Name=="PSME-07"|
+                        MacroPlot.Name=="PSME-08"|MacroPlot.Name=="PSME-09")
+
+write.csv(tree_basal_2, "tree_basal.csv")
+
 #averaging/plot by year
-tree_basal_summary=tree_basal %>% group_by(Year, Species.Symbol) %>% summarize(avg_plot_ba=mean(totalba_peracre))
+tree_basal_summary=tree_basal_2 %>% group_by(Year, Species.Symbol) %>% summarize(avg_plot_ba=mean(totalba_peracre))
 
 
 
 #plotting by species
-plot=ggplot(tree_basal, aes(x=Year, y=totalba_peracre, fill=Species.Symbol))+
+plot=ggplot(tree_basal_2, aes(x=Year, y=totalba_peracre, fill=Species.Symbol))+
   geom_bar(position="stack", stat="identity")+theme_classic()+ylab("Total Basal Area per Acre (ft^2/acre)")
 
 plot=plot +annotate("text", x="2003", y=50,size=3, label="Fire", color="red")
 plot
 
-ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/tree_basal_area.png", width=7, height=3)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/tree_basal_area_NSRF.png", width=7, height=3)
 
 #sum basal area by year and plot
 tree_basal=tree_1 %>% group_by(Year, MacroPlot.Name, SubFrac) %>% summarize(total_ba=sum(basal_area))

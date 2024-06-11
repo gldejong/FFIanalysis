@@ -49,6 +49,9 @@ tree=tree[-which(tree$Species.Symbol=="CANOPY"),]
 Combining years 1990, 1991, 1992 - SAGUARO SPECIFIC
 
 ```{r}
+#counting species for each year and creating new data frame for results
+species_summary=tree %>% group_by(Year, SubFrac) %>% count(Species.Symbol)
+
 early_ss=species_summary[which(species_summary$Year %in% c("1990", "1991", "1992")), ]
 species=unique(early_ss$Species.Symbol)
 
@@ -143,7 +146,7 @@ plot=ggplot(species_summary, aes(x="", y=percent, fill=Species.Symbol)) +
 plot
 
 #saving plot - CHANGE TITLE 
-ggsave("PSME_Finalized_Plots/PSME_species_allsizes.png", width=7, height=5)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/PSME_species_allsizes.png", width=7, height=5)
 ```
 
 ### Species Composition Pie Chart by Size Class
@@ -249,5 +252,5 @@ my_tag=c(my_tag, 65)
 
 print(my_tag)
 #saving plot - CHANGE TITLE 
-ggsave("PSME_Finalized_Plots/PSME_species_by_size.png", width=15, height=8)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/PSME_species_by_size.png", width=15, height=8)
 ```
