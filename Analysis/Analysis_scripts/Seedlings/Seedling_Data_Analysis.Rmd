@@ -113,14 +113,14 @@ seedlings_plotdata=seedlings_summary%>%
 #plotting mean density for size class each year and total
 ggplot(seedlings_plotdata, aes(x=Year, y=density_mean,
                   group=as.factor(SizeClHt), fill=as.factor(SizeClHt)))+
-  geom_vline(xintercept="2004-01-01",linetype='dashed', color='red', size=0.5)+
+  geom_vline(xintercept="2004-01-01",linetype='dashed', color='red', linewidth=0.5)+
 theme_classic()+geom_area()+labs(title="Seedling Density (tree/acre) over time",
                                  fill="Height Class")+
   scale_color_viridis_d()+
   facet_wrap(~SizeClHt)+ theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
 
 #saving plot
-ggsave("PSME_Finalized_Plots/seedlingdensity.png", height=4, width=5)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/seedlingdensity.png", height=4, width=5)
 ```
 
 ## Seedling Analysis by Species
@@ -165,16 +165,17 @@ seedlings_plotdata <- seedlings_plotdata[-which(seedlings_plotdata$SizeClHt %in%
 
 ```{r plot}
 
+
 ggplot(seedlings_plotdata, aes(x=SizeClHt, y=density_mean,
                                fill=as.factor(Species.Symbol)))+geom_bar(position='stack', stat='identity')+
   facet_grid(rows=vars(Year))+
 
   theme_classic()+labs(title="PSME Plots Seedling Density over time by species and size class",
                                    fill="Species")+
-  scale_fill_brewer(palette = "PuOr")+
+  scale_fill_brewer(palette = "Spectral")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))+
   ylab("Mean Density (tree/acre)")
 
 
-ggsave("PSME_Finalized_Plots/seedlingdensity_byspecies.png", height=4, width=8)
+ggsave("C:/Users/edeegan/OneDrive - DOI/FFIanalysis/Analysis/PSME_Plots/seedlingdensity_byspecies.png", height=4, width=8)
 ```

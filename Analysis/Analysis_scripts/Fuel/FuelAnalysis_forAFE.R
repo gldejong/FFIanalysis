@@ -94,8 +94,12 @@ pivot_longer(cols=c(OneHr, TenHr, HunHr, '1000hr'), names_to="Size_class", value
 
 
 #calculating percent increase for thousand hour fuels
-fuels_prevpost %>% group_by(year, Size_class) %>% summarize(mean=mean(Fuel_Loading))
-((23.9-14.2)/14.2)*100
+calc=fuels_prevpost %>% group_by(year, Size_class) %>% summarize(mean=mean(Fuel_Loading))
+calc=calc[9:16,]
+calc[1,3]/sum(calc[1:4,3])*100
+calc[5,3]/sum(calc[5:8,3])*100
+
+
 
 ggplot() +
   theme_bw() +

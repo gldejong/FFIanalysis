@@ -219,7 +219,7 @@ plot=ggplot(species_summary_2, aes(x="", y=percent, fill=Species.Symbol)) +
   coord_polar("y", start=0)+
   facet_grid(factor(SizeClass, levels=c("Overstory (30<)", "Medium (<30)", "Pole (<15.1)")) ~ Year)+
   geom_text(aes(label = paste(percent, "%")), size=2,position = position_stack(vjust=0.5)) +
-  labs(x = NULL, y = NULL, fill = NULL)+theme_bw()+scale_fill_brewer(palette = "PuOr")+
+  labs(x = NULL, y = NULL, fill = NULL)+theme_bw()+scale_fill_brewer(palette = "Spectral")+
   labs(title = "PSME plots species composition over time")+
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 plot
@@ -230,7 +230,7 @@ my_tag=c(my_tag, 65)
 
 
 #saving plot - CHANGE TITLE 
-ggsave("PSME_Finalized_Plots/PSME_species_by_size.png", width=15, height=8)
+ggsave("PSME_Plots/PSME_species_by_size.png", width=15, height=8)
 
 plots_num=tree %>% group_by(Year) %>% summarize(count=n_distinct(MacroPlot.Name))
 plots_num[3,2]=9
